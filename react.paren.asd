@@ -6,10 +6,11 @@
   :author "Crackbot <thecrackbot@gmail.com>"
   :maintainer "Crackbot <thecrackbot@gmail.com>"
   :license "The MIT License (MIT)"
-  :components ((:file "package")
+  :components ((:static-file "react.paren.asd")
+               (:file "package")
+               (:file "pax")
                (:file "react")
-               ;; (:module "lib"
-               ;;          :components ((:javascript-file "lib/react-dom-0.14.0.js")
-               ;;                       (:javascript-file "lib/react-with-addons-0.14.0.js")))
-               )
+               (:module "lib"
+                        :components ((:javascript-file "react-dom-0.14.0.js")
+                                     (:javascript-file "react-with-addons-0.14.0.js"))))
   :depends-on (:parenscript :contracts.paren :iterate :mgl-pax :serve.paren :lisp-unit))

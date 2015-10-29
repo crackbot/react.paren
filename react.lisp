@@ -1,21 +1,33 @@
 
 (in-package :react.paren)
 
-(defpslib "react"
-    :system-source-dir #p"/home/cb/dev/2014/react.paren"
-    :paren-source-dir #p"/home/cb/dev/2014/react.paren/lib"
-    :include-js t)
+(defpssyslib "react" :react.paren)
 
-(defsection @react-manual (:title "React manual")
-  "Manual for using react.js via parenscript"
-  "This library define couple of helper macros to make it easier to
+(defsection @main-manual (:title "React manual")
+  (react.paren asdf:system)
+  "This library defines couple of helper macros to make it easier to
 use react.js library"
-  (*with-self* variable))
+  (*with-self* variable)
+
+  (component psmacro)
+  (defcomponent psmacro)
+  (render-component psmacro)
+  (who psmacro)
+  (set-state% psmacro)
+
+  "Example"
+
+  "```commonlisp
+   (defcomponent hello
+     (defun render ()
+       (who (:div (:p (@ this props text))))))
+
+   (render-component hello (-> document (get-element-by-id \"test\")))
+   ```")
 
 (defparameter *react-name* '*react)
 (defparameter *with-self* t
-  "Define self variable inside each function binded to this: var self
-  = this;")
+  "Define self variable inside each function in component")
 
 (defvar *supported-react-tags*
   '(a abbr address area article aside audio b base bdi bdo big blockquote body br
@@ -26,7 +38,7 @@ use react.js library"
     output p param pre progress q rp rt ruby s samp script section select small
     source span strong style sub summary sup table tbody td textarea tfoot th
     thead time title tr track u ul var video wbr)
-    "Tags that are converted to react classes")
+  "Tags that are converted to react classes")
 
 (defun parse-defun (def)
   (let ((defun-form (car def))
