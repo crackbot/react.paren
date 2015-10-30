@@ -14,8 +14,7 @@ use react.js library
 
 - [variable] *WITH-SELF* T
 
-    Define self variable inside each function binded to this: var self
-    = this;
+    Define self variable inside each function in component
 
 - [psmacro] COMPONENT 
 
@@ -30,9 +29,14 @@ use react.js library
 Example
 
 ```commonlisp
+
+(defcomponent child
+  (defun render ()
+    (who (:p "Got prop: " (@ this props text)))))
+   
 (defcomponent hello
   (defun render ()
-    (who (:div (:p (@ this props text))))))
+    (who (:div (:p (@ this props text)) (% child :text "it works!")))))
 
 (render-component hello (-> document (get-element-by-id "test")))
 ```
