@@ -3,7 +3,10 @@
   (:use :cl :parenscript :contracts.paren :serve.paren :mgl-pax)
   (:export :component
            :defcomponent
+
+           :render
            :render-component
+           
            :who
            :set-state%))
 

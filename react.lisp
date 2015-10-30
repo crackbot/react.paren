@@ -5,6 +5,7 @@
 
 (defsection @main-manual (:title "React manual")
   (react.paren asdf:system)
+  
   "This library defines couple of helper macros to make it easier to
 use react.js library"
   (*with-self* variable)
@@ -18,14 +19,21 @@ use react.js library"
   "Example"
 
   "```commonlisp
+
+   (defcomponent child
+     (defun render ()
+       (who (:p \"Got prop: \" (@ this props text)))))
+   
    (defcomponent hello
      (defun render ()
-       (who (:div (:p (@ this props text))))))
+       (who (:div (:p (@ this props text)) (% child :text \"it works!\")))))
 
    (render-component hello (-> document (get-element-by-id \"test\")))
    ```")
 
 (defparameter *react-name* '*react)
+(defparameter *react-dom* '*react-d-o-m)
+
 (defparameter *with-self* t
   "Define self variable inside each function in component")
 
@@ -113,7 +121,11 @@ use react.js library"
 
 (defpsmacro render-component (name dom)
   "Render component inside dom node"
-  `(chain ,*react-name* (render-component ,name ,dom)))
+  `(chain ,*react-dom* (render ,name ,dom)))
+
+(defpsmacro render (name dom)
+  "Render component inside dom node"
+  `(chain ,*react-dom* (render ,name ,dom)))
 
 (defpsmacro who (&rest body)
   "Transform cl-who like forms into react nodes"
@@ -129,6 +141,9 @@ use react.js library"
 (defun keyword-to-sym (kwd)
   (intern (symbol-name kwd) :react.paren))
 
+;; (defun keyword-to-str (kwd)
+;;   (keyword-to-sym
+
 (defun supported-tag-p (tag)
   (member (keyword-to-sym tag) *supported-react-tags* :test #'equal))
 
@@ -136,7 +151,7 @@ use react.js library"
   (mapcan #'(lambda (def)
               (cond ((stringp def) (list def))
                     ((and (listp def) (keywordp (car def))) (list (funcall body-fn def)))
-                    ((listp def) `(,def))
+                    ((listp def) (list (funcall body-fn def)))
                     (t (list def))))
           sexp))
 
@@ -153,7 +168,10 @@ use react.js library"
           attrs))
 
 (defun tree-to-react (sexp)
-  (let (tag attr-list body)
+  (let (comp-init tag attr-list body)
+    (when (eql (car sexp) '%)
+      (setf comp-init t
+            sexp (cdr sexp)))
     (cond
       ((atom (first sexp))
        (setf tag (first sexp))
@@ -176,6 +194,13 @@ use react.js library"
        (setf body (cdr sexp))))
     (when attr-list
       (setf attr-list (fixup-attributes attr-list)))
-    (if (supported-tag-p tag)
-        `(chain ,*react-name* *d-o-m (,(keyword-to-sym tag) (create ,@attr-list) ,@(process-body body #'tree-to-react)))
-        `(,(keyword-to-sym tag) (create ,@attr-list) ,@(process-body body #'tree-to-react)))))
+
+    (cond (comp-init
+           `(chain ,*react-name* (create-element ,(keyword-to-sym tag)
+                                                 (create ,@attr-list)
+                                                 ,@(process-body body #'tree-to-react))))
+          ((supported-tag-p tag)
+           `(chain ,*react-name* (create-element ,(string-downcase (symbol-name tag))
+                                                 (create ,@attr-list)
+                                                 ,@(process-body body #'tree-to-react))))
+          (t `(,@sexp)))))

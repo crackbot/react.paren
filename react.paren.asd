@@ -1,5 +1,5 @@
 
-(defsystem :react.paren
+(asdf:defsystem :react.paren
   :name "react.paren"
   :description "Bindings to react.js library with several extensions."
   :version "0.0.2"
@@ -11,6 +11,6 @@
                (:file "pax")
                (:file "react")
                (:module "lib"
-                        :components ((:javascript-file "react-dom-0.14.0.js")
-                                     (:javascript-file "react-with-addons-0.14.0.js"))))
+                        :components ((:javascript-file "react-zdom-0.14.0")
+                                     (:javascript-file "react-with-addons-0.14.0"))))
   :depends-on (:parenscript :contracts.paren :iterate :mgl-pax :serve.paren :lisp-unit))
