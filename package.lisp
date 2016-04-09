@@ -1,12 +1,10 @@
 
 (defpackage :react.paren
-  (:use :cl :parenscript :contracts.paren :serve.paren :mgl-pax)
+  (:use :cl :parenscript :contracts.paren :serve.paren :mgl-pax :mgl-pax-ext)
   (:export :component
            :defcomponent
-
            :render
-           :render-component
-           
+           :render-component           
            :who
            :set-state%))
 
