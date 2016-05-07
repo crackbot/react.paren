@@ -36,7 +36,7 @@ use react.js library"
 "
 
   "Here is comment form translated from
-react.js [https://facebook.github.io/react/docs/tutorial.html](tutorial)
+react.js [tutorial](https://facebook.github.io/react/docs/tutorial.html)
 With the only difference of contract check.
 
 ```lisp
