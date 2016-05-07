@@ -20,6 +20,7 @@ use react.js library"
 
 (defsection @react-tutorial (:title "Tutorial")
   "Few simple components:
+
 ```lisp
 
    (defcomponent child
@@ -32,7 +33,8 @@ use react.js library"
                   (% child :text \"it works!\")))))
 
    (render-component hello (-> document (get-element-by-id \"test\")))
-```"
+```
+"
 
   "Here is comment form translated from
 react.js (tutorial)[https://facebook.github.io/react/docs/tutorial.html]
