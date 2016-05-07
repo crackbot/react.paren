@@ -123,19 +123,17 @@ use react.js library
 Few simple components:
 
 ```lisp
-
-   (defcomponent child
-     (defun render ()
-       (who (:p "Got prop: " (@ this props text)))))
+(defcomponent child
+  (defun render ()
+    (who (:p "Got prop: " (@ this props text)))))
    
-   (defcomponent hello
-     (defun render ()
-       (who (:div (:p (@ this props text))
-                  (% child :text "it works!")))))
+(defcomponent hello
+  (defun render ()
+    (who (:div (:p (@ this props text))
+               (% child :text "it works!")))))
 
-   (render-component hello (-> document (get-element-by-id "test")))
+(render-component hello (-> document (get-element-by-id "test")))
 ```
-
 
 Here is comment form translated from
 react.js (tutorial)[https://facebook.github.io/react/docs/tutorial.html][]
