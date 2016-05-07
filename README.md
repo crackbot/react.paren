@@ -136,7 +136,7 @@ Few simple components:
 ```
 
 Here is comment form translated from
-react.js (tutorial)[https://facebook.github.io/react/docs/tutorial.html]
+react.js [https://facebook.github.io/react/docs/tutorial.html](tutorial)
 With the only difference of contract check.
 
 ```lisp
