@@ -1,12 +1,16 @@
 
 (defpackage :react.paren
-  (:use :cl :parenscript :contracts.paren :serve.paren :mgl-pax :mgl-pax-ext)
+  (:use :cl
+        :parenscript :contracts.paren :serve.paren
+        :mgl-pax :mgl-pax-ext)
   (:export :component
            :defcomponent
+           :render-component
            :render
-           :render-component           
            :who
-           :set-state%))
+           :set-state%
+           :create-el
+           :@main-manual))
 
 (defpackage :react.paren-tests
-  (:use :cl :react.paren :parenscript :lisp-unit))
+  (:use :cl :parenscript :react.paren :lisp-unit))

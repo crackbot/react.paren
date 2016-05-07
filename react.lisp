@@ -13,12 +13,14 @@ use react.js library"
   (component psmacro)
   (defcomponent psmacro)
   (render-component psmacro)
+  (render psmacro)
   (who psmacro)
   (set-state% psmacro)
+  (@react-tutorial section))
 
-  "Example"
-
-  "```commonlisp
+(defsection @react-tutorial (:title "Tutorial")
+  "Few simple components:
+```lisp
 
    (defcomponent child
      (defun render ()
@@ -26,10 +28,54 @@ use react.js library"
    
    (defcomponent hello
      (defun render ()
-       (who (:div (:p (@ this props text)) (% child :text \"it works!\")))))
+       (who (:div (:p (@ this props text))
+                  (% child :text \"it works!\")))))
 
    (render-component hello (-> document (get-element-by-id \"test\")))
-   ```")
+```"
+
+  "Here is comment form translated from
+react.js (tutorial)[https://facebook.github.io/react/docs/tutorial.html]
+With the only difference of contract check.
+
+```lisp
+(defcomponent *comment-form
+  (:>> on-comment-submit functionp)
+  
+  (defun get-initial-state ()
+    (create :author \"\"
+            :text \"\"))
+
+  (defun handle-author-change (e)
+    (set-state% :author (@ e target value)))
+
+  (defun handle-text-change (e)
+    (set-state% :text (@ e target value)))
+
+  (defun handle-submit (e)
+    (-> e (prevent-default))
+    (let ((author (-> this state author (trim)))
+          (text   (-> this state text (trim))))
+      (when (and author text)
+        (-> this props (on-comment-submit (create :author author
+                                                  :text   text)))
+        (set-state% :author \"\"
+                    :text \"\"))))
+
+  (defun render ()
+    (who (:form :class \"commentForm\" :on-submit (@ this handle-submit)
+                (:input :type \"text\"
+                        :placeholder \"Your name\"
+                        :value (@ this state author)
+                        :on-change (@ this handle-author-change))
+                (:input :type \"text\"
+                        :palceholder \"Say something...\"
+                        :value (@ this state text)
+                        :on-change (@ this handle-text-change))
+                (:input :type \"submit\"
+                        :value \"Post\")))))
+```
+")
 
 (defparameter *react-name* '*react)
 (defparameter *react-dom* '*react-d-o-m)
@@ -56,20 +102,24 @@ use react.js library"
     (values defun-form name lambda-list body)))
 
 (defun transform-defun-form (defun-form)
+  "React defun forms support contracts, this function transforms defun
+form into corresponding lambda form"
   ;'lambda/contract)
   (case defun-form
     (defun 'lambda)
     (defun/contract 'lambda/contract)))
 
 (defun process-props (component-name props-contracts)
-  ""
+  "Instead of using standard react.js prop validators, this library
+integrates with contracts.paren. You can use contracts to test
+props. Only single combinator is supported right now: >>"
   (let ((res '()))
     (do ((i 0 (+ i 2)))
         ((>= i (length props-contracts)))
       (progn
         (let ((expected (with-output-to-string (out)
                           (format out "~A" (nth (+ i 1) props-contracts)))))
-          (push (nth i props-contracts) res)
+          (push (fixup-attr (nth i props-contracts)) res)
           (push `(lambda (props prop-name component)
                    (when (not (,(nth (+ i 1) props-contracts)
                                (getprop props prop-name))) ;; prop-name component-name))
@@ -81,34 +131,45 @@ use react.js library"
                      (return (new (*error (+ "Prop " prop-name " validation failed"))))))
               res))))
     (nreverse res)))
-  ;; (list (car props)
-  ;;       (cadr props)))
-  ;; customProp: function(props, propName, componentName) {
-  ;;     if (!/matchme/.test(props[propName])) {
-  ;;       return new Error('Validation failed!');
-  ;;     }
-  ;;   }
 
 (defpsmacro component (name &rest body)
-  "Define react component"
-  (flet ((process-form (def)
+  "Create new react class component. Each body definition should
+either be a DEFUN form or an extension. Extension is defined to be a
+form that starts with keyword. Any other for will be ignored. Here is an example:
 
+```lisp
+(component *test
+  (:>> on-click functionp)
+           
+  (defun on-click (ev)
+    (-> this props (on-click)))
+
+  (defun render ()
+    (who (:button :on-click (@ this on-click)))))
+```
+
+There is only one supported extension right now :>> which acts as
+contract validator for react props. And supports all contracts.paren
+contracts.
+
+This follows the same semantics as DEFJSCLASS."
+  (flet ((process-form (def)
            (cond ((equalp (car def) :>>)
                   ;; this adds support to define parenscript contracts
                   ;; inside the component, which is transformed into
                   ;; propTypes
                   `(prop-types (create ,@(process-props name (cdr def))))) ; mapcan #'process-props (cdr def)))))
                  
-                  ((= (length def) 2)
-                   `(,(car def) ,@(cdr def)))
+                 ((= (length def) 2)
+                  `(,(car def) ,@(cdr def)))
                  
                  (t (multiple-value-bind (defun-form name lambda-list body)
                         (parse-defun def)
                       (case defun-form
                         (defun `(,name (lambda ,lambda-list
-                                         ,(when *with-self*
-                                                `(var self this))
-                                         (progn ,@body))))
+                                     ,(when *with-self*
+                                            `(var self this))
+                                     (progn ,@body))))
                         (defun/contract `(,name (lambda/contract ,lambda-list
                                                                  ,@body)))))))))
     
@@ -116,19 +177,55 @@ use react.js library"
                                                 ,@(mapcan #'process-form body))))))
 
 (defpsmacro defcomponent (name &rest body)
-  "Bind component to a variable of the same name as component"
+  "Bind component to a variable of the same name as component. In most
+  cases you want to use that instead of COMPONENT directly"
   `(var ,name (component ,name ,@body)))
 
 (defpsmacro render-component (name dom)
-  "Render component inside dom node"
-  `(chain ,*react-dom* (render ,name ,dom)))
+  "Render component inside dom node, initializing the component"
+  `(chain ,*react-dom* (render (chain ,*react-name* (create-element ,name nil)) ,dom)))
 
 (defpsmacro render (name dom)
-  "Render component inside dom node"
+  "Render component inside dom node. You need to do component
+initialization yourself, for that you can use CREATE-EL
+macro. Example:
+
+```lisp
+(render (create-el *todo-app :data data)
+        (-> document (get-element-by-id \"test\")))
+```
+"
+
   `(chain ,*react-dom* (render ,name ,dom)))
 
 (defpsmacro who (&rest body)
-  "Transform cl-who like forms into react nodes"
+  "Transform cl-who like forms into react nodes. In most cases you
+  need to use that function in component's render method. For
+  initialization of other components you need to use special form
+  starting with %. Example:
+
+```lisp
+(who (% todo-list :item (@ this state items)))
+```
+ 
+  You can also use this form to initialize components inside
+  functions. Example:
+
+```lisp
+(defcomponent todo-list
+  (defun init-item (data)
+    (who (% todo-item :data data)))
+    
+  (defun render ()
+    (let ((items (mapcar (@ this init-item)
+                         (@ this state items))))
+      (who (:ul items))))
+```
+
+  However if you need to initialize component dynamically, when
+  component is referenced by a variable or it's parameters are
+  dynamic, use CREATE-EL.
+"
   (when (and (listp body) (listp (car body)))
     (tree-to-react (car body))))
 
@@ -137,6 +234,22 @@ use react.js library"
   (if *with-self*
       `(chain self (set-state (create ,@body)))
       `(chain this (set-state (create ,@body)))))
+
+(defpsmacro create-el (tag &rest sexp)
+  "Create new element. This acts the same as special % form inside
+WHO. The difference is in how body is processed. Use this form when
+you have dynamic component/attributes. Or when initializing new
+component outside of any other component. Example:
+
+```lisp
+(let ((component (get-some-component))
+      (data (create :key 1
+                    :args (get-some-args))))
+  (create-el component data))
+```
+"
+  `(chain ,*react-name* (create-element ,tag
+                                        ,@sexp)))
 
 (defun keyword-to-sym (kwd)
   (intern (symbol-name kwd) :react.paren))
@@ -147,6 +260,21 @@ use react.js library"
 (defun supported-tag-p (tag)
   (member (keyword-to-sym tag) *supported-react-tags* :test #'equal))
 
+(defun fixup-attr (attr)
+  "Given attr it will transform it into parenscript form that
+translates into camelCase"
+  (if (keywordp attr)
+      (cond ((eq attr :class) 'class-name)
+            ((find #\- (symbol-name attr)) (keyword-to-sym attr))
+            (t attr))
+      attr))
+
+(defun fixup-attrs (attrs)
+  "this does some name fixing for who vs paren vs js object props
+   class -> className
+   some-prop -> someProp"
+  (mapcar #'fixup-attr attrs))
+
 (defun process-body (sexp body-fn)
   (mapcan #'(lambda (def)
               (cond ((stringp def) (list def))
@@ -155,19 +283,8 @@ use react.js library"
                     (t (list def))))
           sexp))
 
-(defun fixup-attributes (attrs)
-  "this does some name fixing for who vs paren vs js object props
-   class -> className
-   some-prop -> someProp"
-  (mapcar #'(lambda (attr)
-              (if (keywordp attr)
-                  (cond ((eq attr :class) 'class-name)
-                        ((find #\- (symbol-name attr)) (keyword-to-sym attr))
-                        (t attr))
-                  attr))
-          attrs))
-
 (defun tree-to-react (sexp)
+  "Convert sexp tree to react components."
   (let (comp-init tag attr-list body)
     (when (eql (car sexp) '%)
       (setf comp-init t
@@ -192,9 +309,11 @@ use react.js library"
             collect (list (first rest) (second rest)) into attr
           finally (setf attr-list (apply #'nconc attr)))
        (setf body (cdr sexp))))
+    
     (when attr-list
-      (setf attr-list (fixup-attributes attr-list)))
+      (setf attr-list (fixup-attrs attr-list)))
 
+    ;(break)
     (cond (comp-init
            `(chain ,*react-name* (create-element ,(keyword-to-sym tag)
                                                  (create ,@attr-list)
